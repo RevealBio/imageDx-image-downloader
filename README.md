@@ -1,2 +1,2 @@
 # imageDx-image-downloader
-Tools for downloading imageDx images
+This repository contains tools for bulk downloading of imageDx images
