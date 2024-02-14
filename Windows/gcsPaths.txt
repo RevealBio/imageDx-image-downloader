@@ -1,0 +1,2 @@
+gs://reveal-clientname/mm-dddd clientname studyname 1/mm-dddd myImage 01
+gs://reveal-clientname/mm-dddd clientname studyname 2/mm-dddd myImage 01.tiff
