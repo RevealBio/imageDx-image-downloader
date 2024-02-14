@@ -19,7 +19,7 @@ The list gets prepopulated in the list of downloads file called `gcsPaths.txt` i
 
 If Gcloud SDK is not installed, it will prompt you to download it. It will eventually try to authenticate via a browser but you can close the browser session as we are going to use service keys for authorization.
 
-##Mac Instructions
+## Mac Instructions
 
 Copy the list of files you wish to download and paste it in the "Enter GCS Paths (one per line)" Box. Click download and it should start downloading the files.
 
