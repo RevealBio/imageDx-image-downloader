@@ -43,6 +43,79 @@ function Validate-GcsPath($path) {
     }
     return $isValid
 }
+
+function Get-ValidPaths {
+    $inputLines = $InputTextBox.Text -split "`r`n" | Where-Object { $_ -ne "" }
+    $paths = @()
+    foreach ($line in $inputLines) {
+        if ($line -match '"?gs://[^"]+"?') {
+            $match = $line -match '"?(gs://[^"]+)"?'
+            if ($match) {
+                $path = $matches[1].Trim()
+                $paths += $path
+                Append-LogWithTimestamp "Extracted GCS path: $path"
+            }
+        }
+    }
+    $validPaths = $paths | Where-Object { Validate-GcsPath $_ }
+    return $validPaths
+}
+
+function Verify-Checksums {
+    param(
+        [string]$localDirectoryPath,
+        [string]$gcsPath
+    )
+    try {
+        $OutputBox.AppendText("`r`nStarting checksum verification...`r`n")
+        Append-LogWithTimestamp "Starting checksum verification..."
+
+        # Get all files in the local directory, including nested ones
+        $localFiles = Get-ChildItem -Path $localDirectoryPath -File -Recurse
+        foreach ($file in $localFiles) {
+            # Calculate the relative path of the file with respect to the local directory
+            $relativePath = $file.FullName.Substring($localDirectoryPath.Length).TrimStart('\')
+            
+            # Remove the parent directory from $relativePath
+            $relativePathComponents = $relativePath -split '\\'
+            if ($relativePathComponents.Length -gt 1) {
+                $relativePath = [System.IO.Path]::Combine($relativePathComponents[1..($relativePathComponents.Length - 1)] -join '\')
+            }
+            # Replace backslashes with forward slashes for GCS path compatibility
+            $relativePath = $relativePath -replace '\\', '/'
+            # Construct the full GCS path for the file
+            $remoteFilePath = "$gcsPath/$relativePath"
+
+            $OutputBox.AppendText("`r`nVerifying $relativePath...`r`n")
+
+            # Compute the MD5 hash of the local file
+            $localHashOutput = & cmd /c gsutil hash -h $file.FullName
+            $localHash = ($localHashOutput | Where-Object { $_ -match "md5" } | ForEach-Object { $_ -split "\s+" })[-1]
+
+            # Compute the MD5 hash of the corresponding remote file
+            $remoteHashOutput = & cmd /c gsutil hash -h $remoteFilePath
+            $remoteHash = ($remoteHashOutput | Where-Object { $_ -match "md5" } | ForEach-Object { $_ -split "\s+" })[-1]
+
+            # Compare the hashes
+            if ($localHash -eq $remoteHash) {
+                $OutputBox.AppendText("`r`nChecksum match confirmed for $relativePath`r`n")
+                Append-LogWithTimestamp "Checksum match confirmed for $relativePath"
+            } else {
+                $OutputBox.AppendText("`r`nChecksum mismatch detected for $relativePath. Please verify the files.`r`n")
+                Append-LogWithTimestamp "Checksum mismatch detected for $relativePath"
+            }
+        }
+        $OutputBox.AppendText("`r`nChecksum verification complete for all downloaded files.`r`n")
+        Append-LogWithTimestamp "Checksum verification complete for all downloaded files."
+    } catch {
+        $errorMessage = $_.Exception.Message
+        $OutputBox.AppendText("Error during checksum verification: $errorMessage`r`n")
+        Append-LogWithTimestamp "Error during checksum verification: $errorMessage"
+    }
+}
+
+
+
 # GUI Elements
 $Form = New-Object System.Windows.Forms.Form
 $Form.Text = 'GSUtil Command Executor for Multiple Folders'
@@ -76,6 +149,13 @@ $ServiceAccountButton.Location = New-Object System.Drawing.Point(95,250) # Adjus
 $ServiceAccountButton.Size = New-Object System.Drawing.Size(180,23)
 $ServiceAccountButton.Text = 'Auth with Service Account'
 $Form.Controls.Add($ServiceAccountButton)
+# Create a new button for checksum verification
+$ChecksumButton = New-Object System.Windows.Forms.Button
+$ChecksumButton.Location = New-Object System.Drawing.Point(280,250) # Adjust position as needed
+$ChecksumButton.Size = New-Object System.Drawing.Size(150,23)
+$ChecksumButton.Text = 'Verify Checksums'
+$Form.Controls.Add($ChecksumButton)
+
 
 $userInput = Get-Content 'gcsPaths.txt' -Raw  # Use -Raw if you expect a single block of text
 $InputTextBox.Text = $userInput
@@ -111,6 +191,23 @@ $ServiceAccountButton.Add_Click({
     # Change button color to green if authentication successful
     $ServiceAccountButton.BackColor = [System.Drawing.Color]::Green
 })
+
+$ChecksumButton.Add_Click({
+    Append-LogWithTimestamp "Checksum verification initiated."
+    $OutputBox.AppendText("ValidPaths: $validPaths`r`n")
+    $validPaths = Get-ValidPaths
+    foreach ($path in $validPaths) {
+        # Assuming $localDirectoryPath is constructed similarly to before
+        $localDirectoryPath = $path -replace '^gs://[^/]+/', '' -replace '/', '\' # Convert GCS path to a local path format
+        $localDirectoryFullPath = Join-Path $PWD "Images\$localDirectoryPath"
+
+        # Call the checksum verification function
+        $OutputBox.AppendText("localDirectoryPath: $localDirectoryPath`r`n")
+        $OutputBox.AppendText("gcsPath: $path`r`n")
+        Verify-Checksums -localDirectoryPath $localDirectoryFullPath -gcsPath $path
+    }
+})
+
 $ExecuteButton.Add_Click({
     $OutputBox.Clear()
     Append-LogWithTimestamp "Download command initiated."
