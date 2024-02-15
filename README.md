@@ -7,7 +7,7 @@ This repository contains tools for bulk downloading of imageDx images
 Clone the repository or download the repo
 
 ### Step 2
-Open the Windows Folder and right click on the file and click "Open as an Administrator". It will launch a window like the image below.
+Open the Windows Folder and right click on the file and click "Run with PowerShell". It will launch a window like the image below.
 
 ![InitDownloaderState](https://github.com/RevealBio/imageDx-image-downloader/assets/95322264/37aca493-9d9b-4b67-8cf5-725d3cbfc3c1)
 
@@ -15,7 +15,7 @@ Open the Windows Folder and right click on the file and click "Open as an Admini
 If the service key file `service_key_YOUR_COMPANY_NAME.txt` is already in the same folder and it will detect it and make the "Authenticate with Service Account" button green. If not, click on the "Authenticate with Service Account" button first and select the service account file sent to you privately.  Once authenticated, the "Authenticate with Service Account" button turns green.
 
 ### Step 4
-The list gets prepopulated in the list of downloads file called `gcsPaths.txt` is in the same directory as the script. Copy the list of files you wish to download and paste it in the "Enter GCS Paths (one per line)" Box. Click download and it should start downloading the files.
+The list of files to download is prepopulated with the contents of the file called `gcsPaths.txt` which is in the same directory as the script. If you wish to modify the set of images to download, copy the list of files you wish to download and paste it in the "Enter GCS Paths (one per line)" Box. Click download and it should start downloading the files.
 
 If Gcloud SDK is not installed, it will prompt you to download it. It will eventually try to authenticate via a browser but you can close the browser session as we are going to use service keys for authorization.
 
