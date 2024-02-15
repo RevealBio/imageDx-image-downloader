@@ -7,7 +7,7 @@ This repository contains tools for bulk downloading of imageDx images
 Clone the repository or download the repo
 
 ### Step 2
-Open the Windows Folder and right click on the file and click "Open as an Administrator". It will launch an window like the image below.
+Open the Windows Folder and right click on the file and click "Open as an Administrator". It will launch a window like the image below.
 
 ![InitDownloaderState](https://github.com/RevealBio/imageDx-image-downloader/assets/95322264/37aca493-9d9b-4b67-8cf5-725d3cbfc3c1)
 
