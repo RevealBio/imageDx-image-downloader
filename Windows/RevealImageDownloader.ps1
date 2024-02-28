@@ -247,6 +247,7 @@ $ExecuteButton.Add_Click({
                 $output = & cmd /c $command
                 if ($output) {
                     $OutputBox.AppendText($output)
+                    Append-LogWithTimestamp "Output: $output"
                 }
                 # Validate the existence of the downloaded file or directory
                 Append-LogWithTimestamp "PWD: $PWD"
@@ -265,6 +266,7 @@ $ExecuteButton.Add_Click({
                 Append-LogWithTimestamp "Error executing command for ${path}: ${errorMessage}"
             }
         }
+        $OutputBox.AppendText("`r`nAll downloads complete.`r`n")
     } else {
         $OutputBox.AppendText("No valid GCS paths found. Please check your input.`r`n")
         Append-LogWithTimestamp "No valid GCS paths found."
