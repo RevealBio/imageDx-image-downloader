@@ -61,6 +61,7 @@ function Get-ValidPaths {
     return $validPaths
 }
 
+
 function Verify-Checksums {
     param(
         [string]$localDirectoryPath,
@@ -192,21 +193,13 @@ $ServiceAccountButton.Add_Click({
     $ServiceAccountButton.BackColor = [System.Drawing.Color]::Green
 })
 
-$ChecksumButton.Add_Click({
-    Append-LogWithTimestamp "Checksum verification initiated."
-    $OutputBox.AppendText("ValidPaths: $validPaths`r`n")
-    $validPaths = Get-ValidPaths
-    foreach ($path in $validPaths) {
-        # Assuming $localDirectoryPath is constructed similarly to before
-        $localDirectoryPath = $path -replace '^gs://[^/]+/', '' -replace '/', '\' # Convert GCS path to a local path format
-        $localDirectoryFullPath = Join-Path $PWD "Images\$localDirectoryPath"
-
-        # Call the checksum verification function
-        $OutputBox.AppendText("localDirectoryPath: $localDirectoryPath`r`n")
-        $OutputBox.AppendText("gcsPath: $path`r`n")
-        Verify-Checksums -localDirectoryPath $localDirectoryFullPath -gcsPath $path
-    }
-})
+function Sanitize-Path {
+    param (
+        [string]$path
+    )
+    # Replace illegal characters with an underscore or another suitable character
+    return $path -replace '[*:?"><|]', '_'
+}
 
 $ExecuteButton.Add_Click({
     $OutputBox.Clear()
@@ -223,6 +216,7 @@ $ExecuteButton.Add_Click({
             }
         }
     }
+
     $validPaths = $paths | Where-Object { Validate-GcsPath $_ }
     if ($validPaths) {
         # Ensure the Images directory exists
@@ -234,15 +228,14 @@ $ExecuteButton.Add_Click({
         foreach ($path in $validPaths) {
             $OutputBox.AppendText("Downloading $path`r`n")
             Append-LogWithTimestamp "Downloading $path"
-            #$localPath = $path -replace '^gs://', '' -replace '/', '\' # Convert GCS path to a local path format for checking
-            $localPath = $path -replace '^gs://[^/]+/', '' -replace '/', '\' # Convert GCS path to a local path format for checking
-            $localDirectoryPath = Join-Path $PWD "Images\$localPath"
+            $sanitizedPath = Sanitize-Path -path ($path -replace '^gs://[^/]+/', '' -replace '/', '\')
+            $localDirectoryPath = Join-Path $PWD "Images\$sanitizedPath"
             # Ensure the local directory exists
             if (-not (Test-Path $localDirectoryPath)) {
                 New-Item -ItemType Directory -Path $localDirectoryPath -Force
-                Append-LogWithTimestamp "Created directory structure for $pathStructure."
+                Append-LogWithTimestamp "Created directory structure for $localDirectoryPath."
             }
-            $command = "gsutil -m cp -r `"$path`" `"${localDirectoryPath}`""
+            $command = "gsutil -m cp -r `"$path/*`" `"$localDirectoryPath`""
             try {
                 $output = & cmd /c $command
                 if ($output) {
@@ -251,8 +244,7 @@ $ExecuteButton.Add_Click({
                 }
                 # Validate the existence of the downloaded file or directory
                 Append-LogWithTimestamp "PWD: $PWD"
-                Append-LogWithTimestamp "localPath: $localPath"
-                Append-LogWithTimestamp "LocalDirPath: $localDirectoryPath"
+                Append-LogWithTimestamp "localDirectoryPath: $localDirectoryPath"
                 if (Test-Path $localDirectoryPath) {
                     $OutputBox.AppendText("`r`nDownload Complete for $path`r`n")
                     Append-LogWithTimestamp "Download Complete for $path"
@@ -272,5 +264,6 @@ $ExecuteButton.Add_Click({
         Append-LogWithTimestamp "No valid GCS paths found."
     }
 })
+
 # Show the main form
 $Form.ShowDialog()
